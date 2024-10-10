@@ -1,4 +1,6 @@
 # Bluetooth USB HID Relay
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fbahaaador%2FBluetooth-USB-HID-Relay.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Fbahaaador%2FBluetooth-USB-HID-Relay?ref=badge_shield)
+
 
 This project creates a Bluetooth USB HID relay using a Raspberry Pi Zero (or similar single-board computer). It allows you to use Bluetooth keyboards and mice with computers that have Bluetooth disabled, by presenting the board as a composite USB HID device.
 
@@ -99,3 +101,5 @@ It's been a fun journey of discovery, and I hope others find it useful or inspir
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fbahaaador%2FBluetooth-USB-HID-Relay.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2Fbahaaador%2FBluetooth-USB-HID-Relay?ref=badge_large)
