@@ -1,2 +1,3 @@
 /bin/*
 cmd/.DS_Store
+.vscode/settings.json
