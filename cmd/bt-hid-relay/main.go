@@ -1,154 +1,152 @@
 package main
 
 import (
-	"encoding/binary"
+	"context"
 	"flag"
 	"fmt"
 	"log"
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 )
 
-type InputEvent struct {
-	Time  [2]uint64
-	Type  uint16
-	Code  uint16
-	Value int32
+var debug bool
+
+type Config struct {
+	MouseInput     string
+	KeyboardInput  string
+	MouseOutput    string
+	KeyboardOutput string
 }
 
-var (
-	debug          bool
-	mouseInput     string
-	keyboardInput  string
-	mouseOutput    string
-	keyboardOutput string
-)
+type Relay struct {
+	config  Config
+	ctx     context.Context
+	cancel  context.CancelFunc
+	errChan chan error
+	sigChan chan os.Signal
+}
 
-func init() {
+func NewRelay(config Config) *Relay {
+	ctx, cancel := context.WithCancel(context.Background())
+	return &Relay{
+		config:  config,
+		ctx:     ctx,
+		cancel:  cancel,
+		errChan: make(chan error, 2),
+		sigChan: make(chan os.Signal, 1),
+	}
+}
+
+func (r *Relay) Start() error {
+	log.Println("Bluetooth HID Relay starting...")
+
+	// if err := r.initializeDevices(); err != nil {
+	// 	return fmt.Errorf("device initialization failed: %v", err)
+	// }
+
+	// Setup signal handling
+	signal.Notify(r.sigChan, syscall.SIGINT, syscall.SIGTERM)
+	go r.handleSignals()
+
+	// Start device relaying
+	go r.relayMouse()
+	go r.relayKeyboard()
+
+	// Wait for completion or error
+	return r.wait()
+}
+
+func (r *Relay) handleSignals() {
+	sig := <-r.sigChan
+	log.Printf("Received signal: %v, initiating shutdown...", sig)
+	r.Shutdown()
+}
+
+func (r *Relay) wait() error {
+	select {
+	case err := <-r.errChan:
+		r.Shutdown()
+		return fmt.Errorf("relay error: %v", err)
+	case <-r.ctx.Done():
+		if r.ctx.Err() == context.Canceled {
+			return nil
+		}
+		return fmt.Errorf("relay error: %v", r.ctx.Err())
+	}
+}
+
+func (r *Relay) relayMouse() {
+	if err := relayInput(r.ctx, r.config.MouseInput, r.config.MouseOutput, &MouseRelay{}); err != nil {
+		r.errChan <- fmt.Errorf("mouse relay: %v", err)
+	}
+}
+
+func (r *Relay) relayKeyboard() {
+	if err := relayInput(r.ctx, r.config.KeyboardInput, r.config.KeyboardOutput, &KeyboardRelay{}); err != nil {
+		r.errChan <- fmt.Errorf("keyboard relay: %v", err)
+	}
+}
+
+// Shutdown gracefully stops the relay service
+func (r *Relay) Shutdown() {
+	log.Println("Shutting down...")
+	r.sendReleaseEvents()
+	time.Sleep(100 * time.Millisecond)
+	r.cancel()
+}
+
+func parseFlags() Config {
+	var config Config
+
 	flag.BoolVar(&debug, "debug", false, "enable debug mode")
-	flag.StringVar(&mouseInput, "mouse-input", "/dev/input/event0", "mouse input device")
-	flag.StringVar(&keyboardInput, "keyboard-input", "/dev/input/event1", "keyboard input device")
-	flag.StringVar(&mouseOutput, "mouse-output", "/dev/hidg0", "mouse output device")
-	flag.StringVar(&keyboardOutput, "keyboard-output", "/dev/hidg1", "keyboard output device")
-	flag.Parse()
+	flag.StringVar(&config.MouseInput, "mouse-input", "/dev/input/event1", "mouse input device")
+	flag.StringVar(&config.KeyboardInput, "keyboard-input", "/dev/input/event0", "keyboard input device")
+	flag.StringVar(&config.MouseOutput, "mouse-output", "/dev/hidg0", "mouse output device")
+	flag.StringVar(&config.KeyboardOutput, "keyboard-output", "/dev/hidg1", "keyboard output device")
+
+	if !flag.Parsed() {
+		flag.Parse()
+	}
+
+	return config
 }
 
 func main() {
-	log.Println("Bluetooth HID Relay starting...")
+	config := parseFlags()
 
-	if err := relayDeviceInputs(); err != nil {
-		log.Fatalf("Error in relay: %v", err)
+	relay := NewRelay(config)
+	if err := relay.Start(); err != nil {
+		log.Printf("Error: %v", err)
+		os.Exit(1)
 	}
+
+	log.Println("Relay stopped successfully")
 }
 
-func relayDeviceInputs() error {
-	mouseHID, err := os.OpenFile(mouseOutput, os.O_WRONLY, 0666)
-	if err != nil {
-		return fmt.Errorf("failed to open mouse HID gadget: %v", err)
+func (r *Relay) sendReleaseEvents() {
+	if debug {
+		log.Println("Sending release events...")
 	}
-	defer mouseHID.Close()
-
-	keyboardHID, err := os.OpenFile(keyboardOutput, os.O_WRONLY, 0666)
-	if err != nil {
-		return fmt.Errorf("failed to open keyboard HID gadget: %v", err)
-	}
-	defer keyboardHID.Close()
-
-	mouseFile, err := os.Open(mouseInput)
-	if err != nil {
-		return fmt.Errorf("failed to open mouse device: %v", err)
-	}
-	defer mouseFile.Close()
-
-	keyboardFile, err := os.Open(keyboardInput)
-	if err != nil {
-		return fmt.Errorf("failed to open keyboard device: %v", err)
-	}
-	defer keyboardFile.Close()
-
-	errChan := make(chan error, 2)
-	go relayInput(mouseFile, mouseHID, "Mouse", errChan)
-	go relayInput(keyboardFile, keyboardHID, "Keyboard", errChan)
-
-	log.Println("Relaying device inputs (press Ctrl+C to exit)")
-
-	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
-
-	select {
-	case err := <-errChan:
-		return fmt.Errorf("relay error: %v", err)
-	case <-sigChan:
-		log.Println("Received interrupt, shutting down...")
-		return nil
-	}
-}
-
-func relayInput(inputFile, outputFile *os.File, deviceName string, errChan chan<- error) {
-	event := InputEvent{}
-	for {
-		err := binary.Read(inputFile, binary.LittleEndian, &event)
-		if err != nil {
-			errChan <- fmt.Errorf("error reading from %s: %v", deviceName, err)
-			return
+	
+	// For keyboard: clear all modifiers and keys
+	keyboardRelease := []byte{0, 0, 0, 0, 0, 0, 0, 0}
+	if f, err := os.OpenFile(r.config.KeyboardOutput, os.O_WRONLY, 0666); err == nil {
+		for i := 0; i < 3; i++ { // Send multiple times to ensure it's received
+			f.Write(keyboardRelease)
+			time.Sleep(10 * time.Millisecond)
 		}
-
-		hidReport, err := convertToHIDReport(event, deviceName)
-		if err != nil {
-			if debug {
-				log.Printf("[DEBUG] Error converting %s event: %v", deviceName, err)
-			}
-			continue
-		}
-
-		_, err = outputFile.Write(hidReport)
-		if err != nil {
-			errChan <- fmt.Errorf("error writing to %s HID: %v", deviceName, err)
-			return
-		}
-
-		if debug {
-			log.Printf("[DEBUG] %s event relayed - Type: %d, Code: %d, Value: %d", deviceName, event.Type, event.Code, event.Value)
-		}
+		f.Close()
 	}
-}
 
-func convertToHIDReport(event InputEvent, deviceName string) ([]byte, error) {
-	switch deviceName {
-	case "Mouse":
-		return convertMouseEvent(event)
-	case "Keyboard":
-		return convertKeyboardEvent(event)
-	default:
-		return nil, fmt.Errorf("unknown device: %s", deviceName)
-	}
-}
-
-func convertMouseEvent(event InputEvent) ([]byte, error) {
-	buttons := byte(0)
-	var x, y int8
-	switch event.Type {
-	case 1: // EV_KEY
-		if event.Code <= 0x110 { // BTN_MOUSE
-			if event.Value == 1 {
-				buttons |= 1 << (event.Code - 0x110)
-			}
+	// For mouse: clear all buttons and movement
+	mouseRelease := []byte{0, 0, 0, 0}
+	if f, err := os.OpenFile(r.config.MouseOutput, os.O_WRONLY, 0666); err == nil {
+		for i := 0; i < 3; i++ {
+			f.Write(mouseRelease)
+			time.Sleep(10 * time.Millisecond)
 		}
-	case 2: // EV_REL
-		switch event.Code {
-		case 0: // REL_X
-			x = int8(event.Value)
-		case 1: // REL_Y
-			y = int8(event.Value)
-		}
+		f.Close()
 	}
-	return []byte{buttons, byte(x), byte(y), 0}, nil
-}
-
-func convertKeyboardEvent(event InputEvent) ([]byte, error) {
-	if event.Type == 1 && event.Code <= 0x77 { // EV_KEY and valid key code
-		return []byte{0, 0, byte(event.Code), 0, 0, 0, 0, 0}, nil
-	}
-	return nil, fmt.Errorf("unsupported keyboard event")
 }
