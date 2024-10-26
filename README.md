@@ -46,7 +46,7 @@ graph TD
 4. Compile the Go program:
 
    ```
-   go build -o bt-hid-relay main.go
+   go build -o bin/bt-hid-relay cmd/bt-hid-relay/main.go
    ```
 
 5. Set up the systemd service:
@@ -99,3 +99,45 @@ It's been a fun journey of discovery, and I hope others find it useful or inspir
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Building, Installing, and Running the Project
+
+This project uses a Makefile for common tasks. Here are the available commands:
+
+- Build the project: `make build`
+- Clean build artifacts: `make clean`
+- Run tests: `make test`
+- Build and run the application: `make run`
+
+For installing and uninstalling the service, you need to use sudo:
+
+- Install the service: `sudo make install`
+- Uninstall the service: `sudo make uninstall`
+
+For example, to build the project:
+
+```
+make build
+```
+
+To install the service:
+
+```
+sudo make install
+```
+
+This ensures that the necessary files are copied to system directories and the service is properly registered with systemd.
+
+## Prerequisites
+
+Before building and running the project, ensure you have the following installed:
+
+1. Go (version 1.21 or later)
+2. Make
+
+On most Linux distributions, including Raspberry Pi OS (formerly Raspbian), `make` is usually pre-installed. However, if it's not available, you can install it using:
+
+```
+sudo apt-get update
+sudo apt-get install
+```

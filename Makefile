@@ -1,8 +1,15 @@
-.PHONY: build clean test install uninstall run
+.PHONY: build clean test install uninstall run setup
 
 # Default target
 all: build
 
+setup:
+	chmod +x scripts/*.sh
+
+run-bluetooth-setup:
+	./scripts/bluetooth_setup.sh
+run-pair-devices:
+	./scripts/pair_devices.sh
 # Build the application
 build:
 	@echo "Building bt-hid-relay..."
