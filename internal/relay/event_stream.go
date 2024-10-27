@@ -79,7 +79,6 @@ func streamDeviceEvents(ctx context.Context, inputPath, outputPath string, event
 				}
 
 				if !eventConverter.validateEvent(event) {
-					logger.DebugPrintf("[DEBUG] Invalid event type for %s: %v", eventConverter.name(), event)
 					continue
 				}
 
