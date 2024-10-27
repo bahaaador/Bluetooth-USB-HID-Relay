@@ -1,8 +1,9 @@
-package main
+package relay
 
-import "log"
+import (
+	"github.com/bahaaador/Bluetooth-USB-HID-Relay/internal/logger"
+)
 
-// MouseRelay handles mouse-specific functionality
 type MouseRelay struct {
 	lastState byte
 }
@@ -13,9 +14,7 @@ func (m *MouseRelay) convertEvent(event InputEvent) ([]byte, error) {
 	// Preserve the last button state
 	report[0] = m.lastState
 
-	if debug {
-		log.Printf("Mouse event: type=%d, code=%d, value=%d, time=%v, lastMouseState=%d", event.Type, event.Code, event.Value, event.Time, m.lastState)
-	}
+	logger.Printf("Mouse event: type=%d, code=%d, value=%d, time=%v, lastMouseState=%d", event.Type, event.Code, event.Value, event.Time, m.lastState)
 
 	switch event.Type {
 	case 1: // EV_KEY
@@ -51,17 +50,15 @@ func (m *MouseRelay) convertEvent(event InputEvent) ([]byte, error) {
 func (m *MouseRelay) validateEvent(event InputEvent) bool {
 	switch event.Type {
 	case 0: // EV_SYN - synchronization events
-		return false  // Skip sync events silently
+		return false // Skip sync events silently
 	case 1: // EV_KEY - button events
 		return event.Code >= 0x110 && event.Code <= 0x112 // Only accept mouse buttons
 	case 2: // EV_REL - movement events
 		return event.Code <= 8 // X, Y, and wheel movements
 	case 4: // EV_MSC - miscellaneous events
-		return false  // Skip misc events silently
+		return false // Skip misc events silently
 	default:
-		if debug {
-			log.Printf("Unknown event type: %d", event.Type)
-		}
+		logger.DebugPrintf("Unknown event type: %d", event.Type)
 		return false
 	}
 }

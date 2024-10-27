@@ -1,12 +1,11 @@
-package main
+package relay
 
 import (
-	"log"
+	"github.com/bahaaador/Bluetooth-USB-HID-Relay/internal/logger"
 )
 
 type KeyboardRelay struct {
-	modifiers byte // Track active modifiers
-	lastEvent InputEvent
+	modifiers   byte // Track active modifiers
 	lastKeyCode byte
 }
 
@@ -88,8 +87,8 @@ func generateKeyCodeMap() map[uint16]byte {
 
 	// Numbers (1-9,0)
 	for i := 1; i <= 10; i++ {
-		linuxCode := uint16(i + 1)      // KEY_1 is 2, KEY_2 is 3, etc
-		hidCode := byte(0x1E + i - 1)   // 0x1E is USB HID code for '1'
+		linuxCode := uint16(i + 1)    // KEY_1 is 2, KEY_2 is 3, etc
+		hidCode := byte(0x1E + i - 1) // 0x1E is USB HID code for '1'
 		m[linuxCode] = hidCode
 	}
 
@@ -99,33 +98,33 @@ func generateKeyCodeMap() map[uint16]byte {
 	}
 
 	// Special keys
-	m[1] = 0x29    // ESC
-	m[14] = 0x2A   // Backspace
-	m[15] = 0x2B   // Tab
-	m[28] = 0x28   // Enter
-	m[29] = 0xE0   // Left Ctrl
-	m[42] = 0xE1   // Left Shift
-	m[54] = 0xE5   // Right Shift
-	m[56] = 0xE2   // Left Alt
-	m[57] = 0x2C   // Space
-	m[58] = 0x39   // Caps Lock
-	m[97] = 0xE4   // Right Ctrl
-	m[100] = 0xE6  // Right Alt
-	m[125] = 0xE3  // Left Meta (Windows/Command)
-	m[126] = 0xE7  // Right Meta (Windows/Command)
+	m[1] = 0x29   // ESC
+	m[14] = 0x2A  // Backspace
+	m[15] = 0x2B  // Tab
+	m[28] = 0x28  // Enter
+	m[29] = 0xE0  // Left Ctrl
+	m[42] = 0xE1  // Left Shift
+	m[54] = 0xE5  // Right Shift
+	m[56] = 0xE2  // Left Alt
+	m[57] = 0x2C  // Space
+	m[58] = 0x39  // Caps Lock
+	m[97] = 0xE4  // Right Ctrl
+	m[100] = 0xE6 // Right Alt
+	m[125] = 0xE3 // Left Meta (Windows/Command)
+	m[126] = 0xE7 // Right Meta (Windows/Command)
 
 	// Additional special keys
-	m[41] = 0x35   // ` (backtick/tilde)
-	m[43] = 0x31   // \ (backslash)
-	m[26] = 0x2F   // [ (left bracket)
-	m[27] = 0x30   // ] (right bracket)
-	m[39] = 0x33   // ; (semicolon)
-	m[40] = 0x34   // ' (single quote)
-	m[51] = 0x36   // , (comma)
-	m[52] = 0x37   // . (period)
-	m[53] = 0x38   // / (forward slash)
-	m[12] = 0x2D   // - (minus)
-	m[13] = 0x2E   // = (equals)
+	m[41] = 0x35 // ` (backtick/tilde)
+	m[43] = 0x31 // \ (backslash)
+	m[26] = 0x2F // [ (left bracket)
+	m[27] = 0x30 // ] (right bracket)
+	m[39] = 0x33 // ; (semicolon)
+	m[40] = 0x34 // ' (single quote)
+	m[51] = 0x36 // , (comma)
+	m[52] = 0x37 // . (period)
+	m[53] = 0x38 // / (forward slash)
+	m[12] = 0x2D // - (minus)
+	m[13] = 0x2E // = (equals)
 
 	// Function keys
 	for i := 0; i < 12; i++ {
@@ -133,23 +132,23 @@ func generateKeyCodeMap() map[uint16]byte {
 	}
 
 	// Navigation cluster
-	m[102] = 0x4A  // Home
-	m[107] = 0x4B  // End
-	m[104] = 0x52  // Page Up
-	m[109] = 0x51  // Page Down
-	m[110] = 0x49  // Insert
-	m[111] = 0x4C  // Delete
-	m[103] = 0x52  // Up Arrow
-	m[108] = 0x51  // Down Arrow
-	m[105] = 0x50  // Left Arrow
-	m[106] = 0x4F  // Right Arrow
+	m[102] = 0x4A // Home
+	m[107] = 0x4B // End
+	m[104] = 0x52 // Page Up
+	m[109] = 0x51 // Page Down
+	m[110] = 0x49 // Insert
+	m[111] = 0x4C // Delete
+	m[103] = 0x52 // Up Arrow
+	m[108] = 0x51 // Down Arrow
+	m[105] = 0x50 // Left Arrow
+	m[106] = 0x4F // Right Arrow
 
 	return m
 }
 
 func (k *KeyboardRelay) convertEvent(event InputEvent) ([]byte, error) {
 	report := make([]byte, 8)
-	
+
 	// Handle modifier keys
 	if isModifier(event.Code) {
 		k.updateModifiers(event)
@@ -160,9 +159,7 @@ func (k *KeyboardRelay) convertEvent(event InputEvent) ([]byte, error) {
 	// Regular keys
 	hidKeyCode, exists := keyCodeMap[event.Code]
 	if !exists {
-		if debug {
-			log.Printf("No mapping for key code: %d", event.Code)
-		}
+		logger.DebugPrintf("No mapping for key code: %d", event.Code)
 		return nil, nil
 	}
 
@@ -185,26 +182,34 @@ func (k *KeyboardRelay) convertEvent(event InputEvent) ([]byte, error) {
 // Helper functions
 func isModifier(code uint16) bool {
 	return code == 29 || // Left Ctrl
-		   code == 97 || // Right Ctrl
-		   code == 42 || // Left Shift
-		   code == 54 || // Right Shift
-		   code == 56 || // Left Alt
-		   code == 100 || // Right Alt
-		   code == 125 || // Left Meta
-		   code == 126    // Right Meta
+		code == 97 || // Right Ctrl
+		code == 42 || // Left Shift
+		code == 54 || // Right Shift
+		code == 56 || // Left Alt
+		code == 100 || // Right Alt
+		code == 125 || // Left Meta
+		code == 126 // Right Meta
 }
 
 func (k *KeyboardRelay) updateModifiers(event InputEvent) {
 	var mask byte
 	switch event.Code {
-	case 29:  mask = 0x01 // Left Ctrl
-	case 97:  mask = 0x10 // Right Ctrl
-	case 42:  mask = 0x02 // Left Shift
-	case 54:  mask = 0x20 // Right Shift
-	case 56:  mask = 0x04 // Left Alt
-	case 100: mask = 0x40 // Right Alt
-	case 125: mask = 0x08 // Left Meta
-	case 126: mask = 0x80 // Right Meta
+	case 29:
+		mask = 0x01 // Left Ctrl
+	case 97:
+		mask = 0x10 // Right Ctrl
+	case 42:
+		mask = 0x02 // Left Shift
+	case 54:
+		mask = 0x20 // Right Shift
+	case 56:
+		mask = 0x04 // Left Alt
+	case 100:
+		mask = 0x40 // Right Alt
+	case 125:
+		mask = 0x08 // Left Meta
+	case 126:
+		mask = 0x80 // Right Meta
 	}
 
 	if event.Value > 0 {
@@ -217,22 +222,17 @@ func (k *KeyboardRelay) updateModifiers(event InputEvent) {
 func (k *KeyboardRelay) validateEvent(event InputEvent) bool {
 	switch event.Type {
 	case 0: // EV_SYN
-		if debug {
-			log.Printf("Sync event received - marks end of event batch")
-		}
-		return false  // Don't need to send to HID device
+		logger.DebugPrintf("Sync event received - marks end of event batch")
+		return false // Don't need to send to HID device
 	case 1: // EV_KEY
 		_, exists := keyCodeMap[event.Code]
 		return exists
 	case 4: // EV_MSC
-		if debug {
-			log.Printf("Misc event received - scancode: %d", event.Code)
-		}
-		return false  // These are metadata events, not actual key presses
+		logger.DebugPrintf("Misc event received - scancode: %d", event.Code)
+		return false // These are metadata events, not actual key presses
 	default:
-		if debug {
-			log.Printf("Unexpected event type: %d", event.Type)
-		}
+		logger.DebugPrintf("Unexpected event type: %d", event.Type)
+
 		return false
 	}
 }
