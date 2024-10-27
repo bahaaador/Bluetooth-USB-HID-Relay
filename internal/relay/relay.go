@@ -3,6 +3,7 @@ package relay
 import (
 	"context"
 	"fmt"
+	"math"
 	"os"
 	"os/signal"
 	"syscall"
@@ -74,27 +75,38 @@ func (r *Relay) wait() error {
 }
 
 func (r *Relay) handleMouseEvents() {
+	var retry int = 0
 	for {
+		retry++
+
 		mouse, err := device.FindInputDevice("mouse")
 		if err != nil {
-			logger.Printf("Mouse not found: %v, retrying in 1s...", err)
-			time.Sleep(time.Second)
+			logger.Printf("Mouse not found: %v, retrying in %d seconds...", err, retry)
+			time.Sleep(time.Duration(retry) * time.Second)
 			continue
 		}
 
+		logger.DebugPrintf("Found mouse at: %s", mouse)
+
 		if err := streamDeviceEvents(r.ctx, mouse, r.config.MouseOutput, &MouseRelay{}); err != nil {
-			r.errChan <- fmt.Errorf("mouse relay: %v", err)
+			logger.Printf("Mouse relay error: %v, reconnecting...", err)
+			continue
 		}
+
+		retry = 0
 	}
 }
 
 func (r *Relay) handleKeyboardEvents() {
+	var retry int = 0
 	for {
 		// Find keyboard keyboard
+		retry++
 		keyboard, err := device.FindInputDevice("keyboard")
 		if err != nil {
-			logger.Printf("Keyboard not found: %v, retrying in 1s...", err)
-			time.Sleep(time.Second)
+			logger.Printf("Keyboard not found: %v, retrying in %d seconds...", err, retry)
+			// Retry every 100ms up to 10 seconds
+			time.Sleep(time.Duration(math.Min(float64(retry), 10)) * 100 * time.Millisecond)
 			continue
 		}
 

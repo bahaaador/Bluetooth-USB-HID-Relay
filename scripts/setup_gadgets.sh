@@ -66,16 +66,16 @@ sleep 2
 
 # Check if the HID devices was created
 if [ -e /dev/hidg0 ]; then
-    echo "HID device /dev/hidg0 created successfully."
+    echo "HID device mouse /dev/hidg0 created successfully."
 else
-    echo "Error: HID device /dev/hidg0 not created."
+    echo "Error: HID device mouse /dev/hidg0 not created."
     exit 1
 fi
 
 if [ -e /dev/hidg1 ]; then
-    echo "HID device /dev/hidg1 created successfully."
+    echo "HID device keyboard /dev/hidg1 created successfully."
 else
-    echo "Error: HID device /dev/hidg1 not created."
+    echo "Error: HID device keyboard /dev/hidg1 not created."
     exit 1
 fi
 

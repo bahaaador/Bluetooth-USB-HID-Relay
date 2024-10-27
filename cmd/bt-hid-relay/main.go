@@ -14,6 +14,8 @@ func parseFlags() relay.Config {
 	var config relay.Config
 
 	flag.BoolVar(&logger.Debug, "debug", false, "enable debug mode")
+	flag.StringVar(&config.MouseOutput, "mouse-output", "/dev/hidg0", "mouse output device")
+	flag.StringVar(&config.KeyboardOutput, "keyboard-output", "/dev/hidg1", "keyboard output device")
 
 	if !flag.Parsed() {
 		flag.Parse()

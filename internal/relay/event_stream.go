@@ -43,10 +43,10 @@ func streamDeviceEvents(ctx context.Context, inputPath, outputPath string, event
 			}
 			continue
 		}
-		try = 1
 
 		defer inputFile.Close()
 
+		logger.DebugPrintf("Opening output device %s", outputPath)
 		outputFile, err = os.OpenFile(outputPath, os.O_WRONLY, 0666)
 		if err != nil {
 			logger.Printf("Failed to open output device %s: %v. Retrying...", outputPath, err)
@@ -57,6 +57,8 @@ func streamDeviceEvents(ctx context.Context, inputPath, outputPath string, event
 
 		event := InputEvent{}
 		deviceName := filepath.Base(inputPath)
+
+		try = 1
 
 		for {
 			select {
