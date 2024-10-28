@@ -1,12 +1,25 @@
 [Unit]
 Description=Bluetooth HID Relay Service
-After=bluetooth.target
+After=bluetooth.target bthelper@.service
 Wants=bluetooth.target
+BindsTo=bthelper@hci0.service
+# Prevent conflicts with Pi's bluetooth helper
+Conflicts=
+RefuseManualStop=no
+RefuseManualStart=no
+StopWhenUnneeded=no
 
 [Service]
+Type=simple
+ExecStartPre=/bin/sleep 2
 ExecStart=/usr/local/bin/bt-hid-relay
 Restart=always
+RestartSec=3
 User=root
+RemainAfterExit=yes
+StartLimitIntervalSec=0
+StartLimitBurst=0
 
 [Install]
-WantedBy=multi-user.target
+WantedBy=multi-user.target bluetooth.target
+Also=bluetooth.target bthelper@hci0.service

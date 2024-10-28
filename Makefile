@@ -15,6 +15,10 @@ build:
 	@echo "Building bt-hid-relay..."
 	@go build -o bin/bt-hid-relay ./cmd/bt-hid-relay/
 
+build-debug:
+	@echo "Building bt-hid-relay with debug..."
+	@go build -tags debug -o bin/bt-hid-relay ./cmd/bt-hid-relay/
+
 # Clean build artifacts
 clean:
 	@echo "Cleaning..."
@@ -27,7 +31,7 @@ test:
 	@go test ./...
 
 # Install the service
-install: build
+install: build-debug
 	@echo "Installing bt-hid-relay service..."
 	cp bin/bt-hid-relay /usr/local/bin/
 	cp scripts/bt-hid-relay.service /etc/systemd/system/
