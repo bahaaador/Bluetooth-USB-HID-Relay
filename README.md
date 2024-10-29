@@ -1,5 +1,7 @@
 # Bluetooth USB HID Relay
 
+A delightfully overengineered solution to an unusual modern problem: using Bluetooth peripherals with Bluetooth-disabled computers.
+
 This project creates a Bluetooth USB HID relay using a Raspberry Pi Zero (or similar single-board computer). It allows you to use Bluetooth keyboards and mice with computers that have Bluetooth disabled, by presenting the board as a composite USB HID device.
 
 ## Inspiration
@@ -36,27 +38,34 @@ graph TD
 2. Clone this repository to your board.
 3. Run the setup scripts in the following order:
 
-   ```
+   ```bash
    sudo ./scripts/setup_usb_host.sh
    sudo reboot
    sudo ./scripts/setup_bluetooth.sh
    sudo ./scripts/setup_gadgets.sh
    ```
 
-4. Compile the Go program:
+4. Install Task runner:
+   ```bash
+   # On Linux/macOS
+   sh -c "$(curl --location https://taskfile.dev/install.sh)" -- -d -b ~/.local/bin
 
-   ```
-   go build -o bin/bt-hid-relay cmd/bt-hid-relay/main.go
-   ```
-
-5. Set up the systemd service:
-
-   ```
-   sudo ./scripts/setup_service.sh
+   # Using Go
+   go install github.com/go-task/task/v3/cmd/task@latest
    ```
 
-6. Pair your Bluetooth devices:
+5. Build the project:
+   ```bash
+   task build
    ```
+
+6. Set up the systemd service:
+   ```bash
+   sudo task install
+   ```
+
+7. Pair your Bluetooth devices:
+   ```bash
    sudo ./scripts/pair_devices.sh
    ```
    You will be prompted to select your keyboard and mouse from the list of available devices.
@@ -65,18 +74,36 @@ graph TD
 
 1. Power on your board and connect it to the target computer via USB.
 2. If you haven't paired your Bluetooth keyboard and mouse yet, run the pairing script:
-   ```
+   ```bash
    sudo ./scripts/pair_devices.sh
    ```
    Follow the prompts to pair your devices.
 3. The board will now relay input from the Bluetooth devices to the target computer.
 
+## Common Tasks
+
+This project uses Task runner for common operations. Here are the available commands:
+
+- Build the project: `task build`
+- Clean build artifacts: `task clean`
+- Run tests: `task test`
+- Build and run the application: `task run`
+- Install the service: `sudo task install`
+- Uninstall the service: `sudo task uninstall`
+
+For example, to build and run the project:
+
+```bash
+task build
+task run
+```
+
 ## Verifying Bluetooth Devices
 
 To verify the connection of Bluetooth devices and echo their inputs:
 
-```
-go run cmd/bt-verify/main.go
+```bash
+task verify
 ```
 
 ## Development
@@ -91,53 +118,26 @@ This project serves as a learning opportunity for:
 
 It's been a fun journey of discovery, and I hope others find it useful or inspiring for their own projects!
 
-## References
-
-- [Adafruit Guide: Turning your Raspberry Pi Zero into a USB Gadget](https://cdn-learn.adafruit.com/downloads/pdf/turning-your-raspberry-pi-zero-into-a-usb-gadget.pdf)
-- [Composite USB Gadgets on the Raspberry Pi Zero](https://www.isticktoit.net/?p=1383)
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## Building, Installing, and Running the Project
-
-This project uses a Makefile for common tasks. Here are the available commands:
-
-- Build the project: `make build`
-- Clean build artifacts: `make clean`
-- Run tests: `make test`
-- Build and run the application: `make run`
-
-For installing and uninstalling the service, you need to use sudo:
-
-- Install the service: `sudo make install`
-- Uninstall the service: `sudo make uninstall`
-
-For example, to build the project:
-
-```
-make build
-```
-
-To install the service:
-
-```
-sudo make install
-```
-
-This ensures that the necessary files are copied to system directories and the service is properly registered with systemd.
-
 ## Prerequisites
 
 Before building and running the project, ensure you have the following installed:
 
 1. Go (version 1.21 or later)
-2. Make
+2. Task runner
 
-On most Linux distributions, including Raspberry Pi OS (formerly Raspbian), `make` is usually pre-installed. However, if it's not available, you can install it using:
+On most Linux distributions, including Raspberry Pi OS (formerly Raspbian), you can install Go using:
 
-```
+```bash
 sudo apt-get update
-sudo apt-get install
+sudo apt-get install golang
 ```
+
+## References
+
+- [Adafruit Guide: Turning your Raspberry Pi Zero into a USB Gadget](https://cdn-learn.adafruit.com/downloads/pdf/turning-your-raspberry-pi-zero-into-a-usb-gadget.pdf)
+- [Composite USB Gadgets on the Raspberry Pi Zero](https://www.isticktoit.net/?p=1383)
+- [Task: A task runner / simpler Make alternative](https://taskfile.dev)
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

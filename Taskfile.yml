@@ -1,0 +1,133 @@
+version: '3'
+
+vars:
+  BINARY_NAME: bt-hid-relay
+  SERVICE_NAME: bt-hid-relay.service
+  INSTALL_PATH: /usr/local/bin
+  SERVICE_PATH: /etc/systemd/system
+
+tasks:
+  default:
+    cmds:
+      - task: build
+
+  setup:
+    desc: Setup initial permissions and requirements
+    cmds:
+      - chmod +x scripts/*.sh
+
+  bluetooth-setup:
+    desc: Run Bluetooth setup script
+    cmds:
+      - ./scripts/bluetooth_setup.sh
+    status:
+      - test -x ./scripts/bluetooth_setup.sh
+    requires:
+      root: true
+
+  pair-devices:
+    desc: Run device pairing script
+    cmds:
+      - ./scripts/pair_devices.sh
+    status:
+      - test -x ./scripts/pair_devices.sh
+    requires:
+      root: true
+
+  build:
+    desc: Build the application
+    cmds:
+      - echo "Building {{.BINARY_NAME}}..."
+      - go build -o bin/{{.BINARY_NAME}} ./cmd/bt-hid-relay/
+    sources:
+      - ./**/*.go
+    generates:
+      - bin/{{.BINARY_NAME}}
+
+  build-debug:
+    desc: Build with debug flags
+    cmds:
+      - echo "Building {{.BINARY_NAME}} with debug..."
+      - go build -tags debug -o bin/{{.BINARY_NAME}} ./cmd/bt-hid-relay/
+    sources:
+      - ./**/*.go
+    generates:
+      - bin/{{.BINARY_NAME}}
+
+  clean:
+    desc: Clean build artifacts
+    cmds:
+      - echo "Cleaning..."
+      - rm -f bin/{{.BINARY_NAME}}
+      - echo "Done"
+
+  test:
+    desc: Run tests
+    cmds:
+      - echo "Running tests..."
+      - go test ./...
+    sources:
+      - ./**/*_test.go
+
+  install:
+    desc: Install the service
+    deps: [build-debug]
+    cmds:
+      - echo "Installing {{.BINARY_NAME}} service..."
+      - cp bin/{{.BINARY_NAME}} {{.INSTALL_PATH}}/
+      - cp scripts/{{.SERVICE_NAME}} {{.SERVICE_PATH}}/
+      - systemctl daemon-reload
+      - systemctl enable {{.BINARY_NAME}}.service
+      - systemctl start {{.BINARY_NAME}}.service
+    status:
+      - test -f {{.INSTALL_PATH}}/{{.BINARY_NAME}}
+    requires:
+      root: true
+
+  uninstall:
+    desc: Uninstall the service
+    cmds:
+      - echo "Uninstalling {{.BINARY_NAME}} service..."
+      - systemctl stop {{.BINARY_NAME}}.service || true
+      - systemctl disable {{.BINARY_NAME}}.service || true
+      - rm -f {{.SERVICE_PATH}}/{{.SERVICE_NAME}}
+      - rm -f {{.INSTALL_PATH}}/{{.BINARY_NAME}}
+      - systemctl daemon-reload
+    requires:
+      root: true
+
+  run:
+    desc: Run the application locally
+    deps: [build]
+    cmds:
+      - echo "Running {{.BINARY_NAME}}..."
+      - sudo ./bin/{{.BINARY_NAME}} -debug
+    requires:
+      root: true
+
+  # New tasks that weren't in the Makefile
+
+  lint:
+    desc: Run linters
+    cmds:
+      - golangci-lint run
+
+  update:
+    desc: Update dependencies
+    cmds:
+      - go get -u ./...
+      - go mod tidy
+
+  status:
+    desc: Check service status
+    cmds:
+      - systemctl status {{.BINARY_NAME}}.service || true
+    requires:
+      root: true
+
+  logs:
+    desc: View service logs
+    cmds:
+      - journalctl -u {{.BINARY_NAME}}.service -f
+    requires:
+      root: true
