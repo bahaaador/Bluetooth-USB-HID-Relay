@@ -5,10 +5,9 @@ import (
 	"log"
 	"os"
 
-	"github.com/bahaaador/Bluetooth-USB-HID-Relay/internal/relay"
-	"github.com/bahaaador/Bluetooth-USB-HID-Relay/internal/logger"
+	"github.com/bahaaador/bluetooth-usb-peripheral-relay/internal/logger"
+	"github.com/bahaaador/bluetooth-usb-peripheral-relay/internal/relay"
 )
-
 
 func parseFlags() relay.Config {
 	var config relay.Config

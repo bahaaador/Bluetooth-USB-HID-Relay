@@ -1,7 +1,7 @@
 package relay
 
 import (
-	"github.com/bahaaador/Bluetooth-USB-HID-Relay/internal/logger"
+	"github.com/bahaaador/bluetooth-usb-peripheral-relay/internal/logger"
 )
 
 type MouseRelay struct {

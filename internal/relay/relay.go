@@ -9,8 +9,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/bahaaador/Bluetooth-USB-HID-Relay/internal/device"
-	"github.com/bahaaador/Bluetooth-USB-HID-Relay/internal/logger"
+	"github.com/bahaaador/bluetooth-usb-peripheral-relay/internal/device"
+	"github.com/bahaaador/bluetooth-usb-peripheral-relay/internal/logger"
 )
 
 type Config struct {

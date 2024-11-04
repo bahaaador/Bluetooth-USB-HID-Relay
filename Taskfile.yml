@@ -16,24 +16,6 @@ tasks:
     cmds:
       - chmod +x scripts/*.sh
 
-  bluetooth-setup:
-    desc: Run Bluetooth setup script
-    cmds:
-      - ./scripts/bluetooth_setup.sh
-    status:
-      - test -x ./scripts/bluetooth_setup.sh
-    requires:
-      root: true
-
-  pair-devices:
-    desc: Run device pairing script
-    cmds:
-      - ./scripts/pair_devices.sh
-    status:
-      - test -x ./scripts/pair_devices.sh
-    requires:
-      root: true
-
   build:
     desc: Build the application
     cmds:
@@ -66,8 +48,6 @@ tasks:
     cmds:
       - echo "Running tests..."
       - go test ./...
-    sources:
-      - ./**/*_test.go
 
   install:
     desc: Install the service
@@ -104,13 +84,6 @@ tasks:
       - sudo ./bin/{{.BINARY_NAME}} -debug
     requires:
       root: true
-
-  # New tasks that weren't in the Makefile
-
-  lint:
-    desc: Run linters
-    cmds:
-      - golangci-lint run
 
   update:
     desc: Update dependencies

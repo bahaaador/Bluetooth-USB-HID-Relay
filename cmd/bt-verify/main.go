@@ -5,14 +5,9 @@ import (
 	"fmt"
 	"log"
 	"os"
-)
 
-type InputEvent struct {
-	Time  [2]uint64
-	Type  uint16
-	Code  uint16
-	Value int32
-}
+	"github.com/bahaaador/bluetooth-usb-peripheral-relay/internal/relay"
+)
 
 func main() {
 	fmt.Println("Bluetooth Device Verification Tool")
@@ -64,7 +59,7 @@ func echoDeviceInputs() error {
 }
 
 func readInput(file *os.File, deviceName string) {
-	event := InputEvent{}
+	event := relay.InputEvent{}
 	for {
 		err := binary.Read(file, binary.LittleEndian, &event)
 		if err != nil {

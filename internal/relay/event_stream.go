@@ -8,11 +8,14 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/bahaaador/Bluetooth-USB-HID-Relay/internal/logger"
+	"github.com/bahaaador/bluetooth-usb-peripheral-relay/internal/logger"
 )
 
 type InputEvent struct {
-	Time  [2]uint64
+	Time struct {
+		Sec  uint32
+		Usec uint32
+	}
 	Type  uint16
 	Code  uint16
 	Value int32
@@ -29,6 +32,8 @@ func streamDeviceEvents(ctx context.Context, inputPath, outputPath string, event
 	var outputFile *os.File
 	var err error
 	var try int = 1
+
+	logger.DebugPrintf("InputEvent struct size: %d bytes", binary.Size(InputEvent{}))
 
 	for {
 		// Attempt to open input and output files

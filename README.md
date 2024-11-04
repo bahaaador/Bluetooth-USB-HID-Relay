@@ -1,8 +1,9 @@
 # Bluetooth USB HID Relay
 
-A delightfully overengineered solution to an unusual modern problem: using Bluetooth peripherals with Bluetooth-disabled computers.
+### A delightfully over-engineered solution to an unusual modern problem! 
+Use Bluetooth peripherals with Bluetooth-disabled computers.
 
-This project creates a Bluetooth USB HID relay using a Raspberry Pi Zero (or similar single-board computer). It allows you to use Bluetooth keyboards and mice with computers that have Bluetooth disabled, by presenting the board as a composite USB HID device.
+This project creates a Bluetooth USB HID relay using a Raspberry Pi Zero (or similar OTG-enabled single-board computer). It allows you to use Bluetooth keyboards and mice with computers that have Bluetooth disabled, by presenting the board as a composite USB HID device.
 
 ## Inspiration
 
@@ -32,11 +33,32 @@ graph TD
 - Go program for handling Bluetooth input and USB HID output
 - Systemd service for automatic startup
 
+## Prerequisites
+
+Before building and running the project, ensure you have the following installed:
+
+1. Go (version 1.21 or later)
+
+   On most Linux distributions, including Raspberry Pi OS (formerly Raspbian), you can install Go using:
+
+   ```bash
+   sudo apt-get update
+   sudo apt-get install golang
+   ```
+2. Install Task runner using:
+
+   ```bash
+   sh -c "$(curl --location https://taskfile.dev/install.sh)" -- -d -b ~/.local/bin
+   ```
+   or
+   ```bash
+   go install github.com/go-task/task/v3/cmd/task@latest
+
 ## Setup
 
-1. Install DietPi (or your chosen Linux distribution) on your Raspberry Pi Zero or similar board.
-2. Clone this repository to your board.
-3. Run the setup scripts in the following order:
+1. Log in to your Raspberry Pi Zero.
+1. Clone this repository to your board.
+1. Run the setup scripts in the following order:
 
    ```bash
    sudo ./scripts/setup_usb_host.sh
@@ -45,26 +67,17 @@ graph TD
    sudo ./scripts/setup_gadgets.sh
    ```
 
-4. Install Task runner:
-   ```bash
-   # On Linux/macOS
-   sh -c "$(curl --location https://taskfile.dev/install.sh)" -- -d -b ~/.local/bin
-
-   # Using Go
-   go install github.com/go-task/task/v3/cmd/task@latest
-   ```
-
-5. Build the project:
+1. Build the project:
    ```bash
    task build
    ```
 
-6. Set up the systemd service:
+1. Set up the systemd service:
    ```bash
    sudo task install
    ```
 
-7. Pair your Bluetooth devices:
+1. Pair your Bluetooth devices:
    ```bash
    sudo ./scripts/pair_devices.sh
    ```
@@ -73,12 +86,12 @@ graph TD
 ## Usage
 
 1. Power on your board and connect it to the target computer via USB.
-2. If you haven't paired your Bluetooth keyboard and mouse yet, run the pairing script:
+2. Make sure your Bluetooth devices are paired and connected to the board. The script below will help you do this.
    ```bash
    sudo ./scripts/pair_devices.sh
    ```
    Follow the prompts to pair your devices.
-3. The board will now relay input from the Bluetooth devices to the target computer.
+3. Build and run the application using the commands in the [Common Tasks](#common-tasks) section.
 
 ## Common Tasks
 
@@ -108,7 +121,7 @@ task verify
 
 ## Development
 
-This project serves as a learning opportunity for:
+This project can be used as is or as basis for other types of USB gadgets. It can also serve as a learning opportunity for:
 - Linux internals
 - Creating USB gadgets
 - Using Go for hardware interfacing
@@ -118,19 +131,10 @@ This project serves as a learning opportunity for:
 
 It's been a fun journey of discovery, and I hope others find it useful or inspiring for their own projects!
 
-## Prerequisites
 
-Before building and running the project, ensure you have the following installed:
+## Compatibility
 
-1. Go (version 1.21 or later)
-2. Task runner
-
-On most Linux distributions, including Raspberry Pi OS (formerly Raspbian), you can install Go using:
-
-```bash
-sudo apt-get update
-sudo apt-get install golang
-```
+Tested with DietPi 64bit as host and Windows 10 and MacOS USB clients to which the keyboard and mouse were connected.
 
 ## References
 
