@@ -96,6 +96,8 @@ This project uses Task runner for common operations:
 - `task clean` - Clean build artifacts
 - `task test` - Run tests
 - `task run` - Build and run the application
+- `task doctor` - Run the diagnose tool
+- `task simulate` - Run the simulate tool
 
 ### Service Management
 - `task service:install` - Install and enable the service
@@ -106,13 +108,27 @@ This project uses Task runner for common operations:
 - `task service:stop` - Stop the service
 - `task service:uninstall` - Remove the service
 
-## Verifying Bluetooth Devices (WIP)
+## Diagnostic Tools
 
-To verify the connection of Bluetooth devices and echo their inputs:
+### IO Diagnostic
+
+This tool will check for connected Bluetooth devices and display all incoming events from your Bluetooth keyboard and mouse, helping you debug connection and input issues.
 
 ```bash
-task verify
+task doctor
 ```
+
+### Input Simulation
+To test the USB HID output without Bluetooth devices:
+
+```bash
+task simulate
+```
+
+This interactive tool allows you to:
+1. Move the mouse in a circle pattern
+2. Type a test message
+These simulations help verify that the USB HID device is working correctly on the host computer.
 
 ## Development
 

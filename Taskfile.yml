@@ -57,6 +57,24 @@ tasks:
       - sudo ./bin/{{.BINARY_NAME}} -debug
     requires:
       root: true
+  
+  doctor:
+    desc: Run the diagnose tool
+    deps: [build-debug]
+    cmds:
+      - echo "Running diagnose tool..."
+      - go run ./cmd/diagnose-io/
+    requires:
+      root: true
+
+  simulate:
+    desc: Run the simulate tool
+    deps: [build-debug]
+    cmds:
+      - echo "Running simulate tool..."
+      - go run ./cmd/simulate-input/
+    requires:
+      root: true
 
   update-dependencies:
     desc: Update dependencies
@@ -74,8 +92,6 @@ tasks:
       - systemctl daemon-reload
       - systemctl enable {{.BINARY_NAME}}.service
       - systemctl start {{.BINARY_NAME}}.service
-    status:
-      - test -f {{.INSTALL_PATH}}/{{.BINARY_NAME}}
     requires:
       root: true
 
@@ -102,7 +118,7 @@ tasks:
   service:logs:
     desc: View service logs
     cmds:
-      - journalctl -u {{.BINARY_NAME}}.service
+      - journalctl -u {{.BINARY_NAME}}.service --follow
     requires:
       root: true
 
