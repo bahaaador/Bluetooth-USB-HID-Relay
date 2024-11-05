@@ -17,7 +17,7 @@ Restart=always
 RestartSec=3
 User=root
 RemainAfterExit=yes
-StartLimitIntervalSec=0
+StartLimitInterval=0
 StartLimitBurst=0
 
 [Install]

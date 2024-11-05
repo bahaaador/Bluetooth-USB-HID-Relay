@@ -82,7 +82,9 @@ func (r *Relay) handleMouseEvents() {
 		mouse, err := device.FindInputDevice("mouse")
 		if err != nil {
 			logger.Printf("Mouse not found: %v, retrying in %d seconds...", err, retry)
-			time.Sleep(time.Duration(retry) * time.Second)
+
+			time.Sleep(time.Duration(math.Min(float64(retry), 10)) * time.Second)
+
 			continue
 		}
 

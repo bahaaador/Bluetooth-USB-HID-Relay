@@ -49,7 +49,22 @@ tasks:
       - echo "Running tests..."
       - go test ./...
 
-  install:
+  run:
+    desc: Run the application locally
+    deps: [build]
+    cmds:
+      - echo "Running {{.BINARY_NAME}}..."
+      - sudo ./bin/{{.BINARY_NAME}} -debug
+    requires:
+      root: true
+
+  update-dependencies:
+    desc: Update dependencies
+    cmds:
+      - go get -u ./...
+      - go mod tidy
+      
+  service:install:
     desc: Install the service
     deps: [build-debug]
     cmds:
@@ -64,7 +79,7 @@ tasks:
     requires:
       root: true
 
-  uninstall:
+  service:uninstall:
     desc: Uninstall the service
     cmds:
       - echo "Uninstalling {{.BINARY_NAME}} service..."
@@ -73,34 +88,41 @@ tasks:
       - rm -f {{.SERVICE_PATH}}/{{.SERVICE_NAME}}
       - rm -f {{.INSTALL_PATH}}/{{.BINARY_NAME}}
       - systemctl daemon-reload
+      - systemctl reset-failed {{.BINARY_NAME}}.service || true
     requires:
       root: true
 
-  run:
-    desc: Run the application locally
-    deps: [build]
-    cmds:
-      - echo "Running {{.BINARY_NAME}}..."
-      - sudo ./bin/{{.BINARY_NAME}} -debug
-    requires:
-      root: true
-
-  update:
-    desc: Update dependencies
-    cmds:
-      - go get -u ./...
-      - go mod tidy
-
-  status:
+  service:status:
     desc: Check service status
     cmds:
       - systemctl status {{.BINARY_NAME}}.service || true
     requires:
       root: true
 
-  logs:
+  service:logs:
     desc: View service logs
     cmds:
-      - journalctl -u {{.BINARY_NAME}}.service -f
+      - journalctl -u {{.BINARY_NAME}}.service
+    requires:
+      root: true
+
+  service:start:
+    desc: Start the service
+    cmds:
+      - systemctl start {{.BINARY_NAME}}.service
+    requires:
+      root: true
+
+  service:stop:
+    desc: Stop the service
+    cmds:
+      - systemctl stop {{.BINARY_NAME}}.service
+    requires:
+      root: true
+
+  service:restart:
+    desc: Restart the service
+    cmds:
+      - systemctl restart {{.BINARY_NAME}}.service
     requires:
       root: true

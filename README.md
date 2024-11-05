@@ -45,20 +45,24 @@ Before building and running the project, ensure you have the following installed
    sudo apt-get update
    sudo apt-get install golang
    ```
-2. Install Task runner using:
+2. Task runner using:
 
    ```bash
    sh -c "$(curl --location https://taskfile.dev/install.sh)" -- -d -b ~/.local/bin
    ```
+
    or
+
    ```bash
    go install github.com/go-task/task/v3/cmd/task@latest
+   ```
+> Note: You may need to add $(go env GOPATH)/bin to your PATH environment variable with the second command.
 
 ## Setup
 
 1. Log in to your Raspberry Pi Zero.
-1. Clone this repository to your board.
-1. Run the setup scripts in the following order:
+2. Clone this repository to your board.
+3. Run the setup scripts in the following order:
 
    ```bash
    sudo ./scripts/setup_usb_host.sh
@@ -67,51 +71,42 @@ Before building and running the project, ensure you have the following installed
    sudo ./scripts/setup_gadgets.sh
    ```
 
-1. Build the project:
-   ```bash
-   task build
-   ```
-
-1. Set up the systemd service:
-   ```bash
-   sudo task install
-   ```
-
-1. Pair your Bluetooth devices:
+5. Pair your Bluetooth devices manually or using the script:
    ```bash
    sudo ./scripts/pair_devices.sh
    ```
-   You will be prompted to select your keyboard and mouse from the list of available devices.
+
+4. Build and install the service:
+   ```bash
+   task build
+   sudo task service:install
+   ```
 
 ## Usage
 
-1. Power on your board and connect it to the target computer via USB.
-2. Make sure your Bluetooth devices are paired and connected to the board. The script below will help you do this.
-   ```bash
-   sudo ./scripts/pair_devices.sh
-   ```
-   Follow the prompts to pair your devices.
-3. Build and run the application using the commands in the [Common Tasks](#common-tasks) section.
+Connect the board to the target computer via USB. This will turn the board on and start the service automatically (assuming it was installed and enabled using the steps above) the bluetooth peripherals should connect automatically as well and the service will retry if they are not connected momentarily. Both Windows and MacOS have been tested and should work.
 
-## Common Tasks
+## Tasks
 
-This project uses Task runner for common operations. Here are the available commands:
+This project uses Task runner for common operations:
 
-- Build the project: `task build`
-- Clean build artifacts: `task clean`
-- Run tests: `task test`
-- Build and run the application: `task run`
-- Install the service: `sudo task install`
-- Uninstall the service: `sudo task uninstall`
+### General tasks
+- `task --list` - List all available tasks
+- `task build` - Build the project
+- `task clean` - Clean build artifacts
+- `task test` - Run tests
+- `task run` - Build and run the application
 
-For example, to build and run the project:
+### Service Management
+- `task service:install` - Install and enable the service
+- `task service:status` - Check service status
+- `task service:logs` - View service logs
+- `task service:restart` - Restart the service
+- `task service:start` - Start the service
+- `task service:stop` - Stop the service
+- `task service:uninstall` - Remove the service
 
-```bash
-task build
-task run
-```
-
-## Verifying Bluetooth Devices
+## Verifying Bluetooth Devices (WIP)
 
 To verify the connection of Bluetooth devices and echo their inputs:
 
@@ -131,10 +126,9 @@ This project can be used as is or as basis for other types of USB gadgets. It ca
 
 It's been a fun journey of discovery, and I hope others find it useful or inspiring for their own projects!
 
-
 ## Compatibility
 
-Tested with DietPi 64bit as host and Windows 10 and MacOS USB clients to which the keyboard and mouse were connected.
+Tested with DietPi 64bit as host and Windows 10 and MacOS USB clients to which the keyboard and mouse were connected. No issues with latency or input delay. My friend have been using this setup for a few days now and it works great.
 
 ## References
 
