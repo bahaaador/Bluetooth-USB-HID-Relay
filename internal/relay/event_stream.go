@@ -11,16 +11,6 @@ import (
 	"github.com/bahaaador/bluetooth-usb-peripheral-relay/internal/logger"
 )
 
-type InputEvent struct {
-	Time struct {
-		Sec  uint32
-		Usec uint32
-	}
-	Type  uint16
-	Code  uint16
-	Value int32
-}
-
 type EventConverter interface {
 	name() string
 	validateEvent(event InputEvent) bool
