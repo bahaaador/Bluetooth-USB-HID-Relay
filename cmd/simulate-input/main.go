@@ -12,7 +12,19 @@ const (
 	keyboardDevice = "/dev/hidg1"
 )
 
-var delay = 300 * time.Millisecond
+var (
+	osOpenFile = os.OpenFile
+	delay      = 300 * time.Millisecond
+)
+
+var openDevice = func(path string) (FileWriter, error) {
+	return osOpenFile(path, os.O_WRONLY, 0666)
+}
+
+type FileWriter interface {
+	Write(p []byte) (n int, err error)
+	Close() error
+}
 
 func main() {
 	for {
@@ -26,7 +38,7 @@ func main() {
 		fmt.Print("\nSelect an option: ")
 		var b = make([]byte, 1)
 		os.Stdin.Read(b)
-		
+
 		input := string(b)
 
 		switch input {
@@ -44,7 +56,7 @@ func main() {
 }
 
 func moveMouseInCircle() {
-	f, err := os.OpenFile(mouseDevice, os.O_WRONLY, 0666)
+	f, err := openDevice(mouseDevice)
 	if err != nil {
 		log.Printf("Error opening mouse device: %v", err)
 		return
@@ -71,7 +83,7 @@ func moveMouseInCircle() {
 }
 
 func typeTestMessage() {
-	f, err := os.OpenFile(keyboardDevice, os.O_WRONLY, 0666)
+	f, err := openDevice(keyboardDevice)
 	if err != nil {
 		log.Printf("Error opening keyboard device: %v", err)
 		return

@@ -10,6 +10,11 @@ import (
 	"github.com/bahaaador/bluetooth-usb-peripheral-relay/internal/relay"
 )
 
+var (
+	osOpenFile = os.OpenFile
+	osStat     = os.Stat
+)
+
 const (
 	checkMark = "\u2713" // ✓
 	crossMark = "\u2717" // ✗
@@ -55,7 +60,7 @@ func verifyDevices() error {
 }
 
 func checkDevice(path, description string) {
-	if _, err := os.Stat(path); os.IsNotExist(err) {
+	if _, err := osStat(path); os.IsNotExist(err) {
 		fmt.Printf("%s %s: not found (%s)\n", crossMark, description, path)
 	} else {
 		fmt.Printf("%s %s: present (%s)\n", checkMark, description, path)
@@ -89,7 +94,7 @@ func echoDeviceInputs() error {
 
 	// Only start readers for devices that were found
 	if mouseDevice != "" {
-		mouseFile, err := os.Open(mouseDevice)
+		mouseFile, err := osOpenFile(mouseDevice, os.O_WRONLY, 0666)
 		if err != nil {
 			return fmt.Errorf("failed to open mouse device: %v", err)
 		}
@@ -98,7 +103,7 @@ func echoDeviceInputs() error {
 	}
 
 	if keyboardDevice != "" {
-		keyboardFile, err := os.Open(keyboardDevice)
+		keyboardFile, err := osOpenFile(keyboardDevice, os.O_WRONLY, 0666)
 		if err != nil {
 			return fmt.Errorf("failed to open keyboard device: %v", err)
 		}

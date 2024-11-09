@@ -3,6 +3,7 @@ package device
 import (
 	"fmt"
 	"os"
+	"strings"
 )
 
 // DeviceType represents the type of HID device
@@ -28,16 +29,37 @@ type DeviceConfig struct {
 	Type       DeviceType
 }
 
-func validateDevice(input, output string) error {
-	// Check if input device exists and is readable
-	if _, err := os.Stat(input); err != nil {
-		return fmt.Errorf("input device %s: %v", input, err)
+var FindInputDeviceFunc = FindInputDevice
+var readFile = os.ReadFile
+
+
+func FindInputDevice(deviceType string) (string, error) {
+	data, err := readFile("/proc/bus/input/devices")
+	if err != nil {
+		return "", fmt.Errorf("failed to read devices: %v", err)
 	}
 
-	// Check if output device exists and is writable
-	if _, err := os.Stat(output); err != nil {
-		return fmt.Errorf("output device %s: %v", output, err)
+	var deviceName string
+
+	// Look through each line
+	for _, line := range strings.Split(string(data), "\n") {
+		// Look for device name
+		if strings.HasPrefix(line, "N: Name=") {
+			if strings.Contains(strings.ToLower(line), deviceType) {
+				deviceName = line
+			}
+			continue
+		}
+
+		// If we found a matching device name, look for its event
+		if deviceName != "" && strings.HasPrefix(line, "H: Handlers=") {
+			for _, word := range strings.Fields(line) {
+				if strings.HasPrefix(word, "event") {
+					return fmt.Sprintf("/dev/input/%s", word), nil
+				}
+			}
+		}
 	}
 
-	return nil
+	return "", fmt.Errorf("%s device not found", deviceType)
 }
