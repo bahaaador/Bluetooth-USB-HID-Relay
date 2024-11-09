@@ -3,6 +3,9 @@
 ### A delightfully over-engineered solution to an unusual modern problem! 
 Use Bluetooth peripherals with Bluetooth-disabled computers.
 
+![Bluetooth USB HID Relay Overview](./assets/bluetooth-usb-peripheral-relay-image.png)
+
+
 This project creates a Bluetooth USB HID relay using a Raspberry Pi Zero (or similar OTG-enabled single-board computer). It allows you to use Bluetooth keyboards and mice with computers that have Bluetooth disabled, by presenting the board as a composite USB HID device.
 
 ## Inspiration
@@ -150,7 +153,6 @@ Tested with DietPi 64bit as host and Windows 10 and MacOS USB clients to which t
 
 - [Adafruit Guide: Turning your Raspberry Pi Zero into a USB Gadget](https://cdn-learn.adafruit.com/downloads/pdf/turning-your-raspberry-pi-zero-into-a-usb-gadget.pdf)
 - [Composite USB Gadgets on the Raspberry Pi Zero](https://www.isticktoit.net/?p=1383)
-- [Task: A task runner / simpler Make alternative](https://taskfile.dev)
 
 ## License
 
