@@ -61,6 +61,26 @@ Before building and running the project, ensure you have the following installed
    ```
 > Note: You may need to add $(go env GOPATH)/bin to your PATH environment variable with the second command.
 
+
+## ⚠️ Caution
+
+**Please read before proceeding:**
+
+This project is currently in an experimental state and has only been tested on a limited number of devices. While it works well for my use case, please be aware that:
+
+- The scripts modify system-level configurations and USB settings
+- Incorrect USB gadget configuration could potentially require a fresh OS installation to recover
+- The project has only been tested on a small number of devices and configurations
+- This is a personal project, not production-ready software
+
+**Before running this project, you should:**
+- Only use it on devices where you can easily reinstall the OS if needed
+- Carefully review all scripts and code before execution
+- Have a backup plan in case something goes wrong
+- Be comfortable with Linux system administration and USB configurations
+
+I cannot guarantee this will work on all devices or configurations. Proceed at your own risk.
+
 ## Setup
 
 1. Log in to your Raspberry Pi Zero.
@@ -68,10 +88,11 @@ Before building and running the project, ensure you have the following installed
 3. Run the setup scripts in the following order:
 
    ```bash
-   sudo ./scripts/setup_usb_host.sh
+   sudo chmod +x scripts/*.sh # make sure all scripts are executable
+   sudo ./scripts/setup_usb_host.sh # enable the USB host and load the necessary modules
    sudo reboot
-   sudo ./scripts/setup_bluetooth.sh
-   sudo ./scripts/setup_gadgets.sh
+   sudo ./scripts/setup_bluetooth.sh # enable and start the bluetooth service
+   sudo ./scripts/setup_gadgets.sh # create the gadget and configure the USB strings
    ```
 
 5. Pair your Bluetooth devices manually or using the script:
@@ -113,7 +134,7 @@ This project uses Task runner for common operations:
 
 ## Diagnostic Tools
 
-### IO Diagnostic
+### I/O Doctor
 
 This tool will check for connected Bluetooth devices and display all incoming events from your Bluetooth keyboard and mouse, helping you debug connection and input issues.
 
@@ -133,6 +154,21 @@ This interactive tool allows you to:
 2. Type a test message
 These simulations help verify that the USB HID device is working correctly on the host computer.
 
+### Uninstall and remove gadget
+
+To uninstall the service:
+```bash
+task service:uninstall
+```
+
+To remove the gadget and restore the USB host configuration:
+```bash
+./scripts/uninstall/undo_setup_gadgets.sh
+./scripts/uninstall/undo_setup_usb_host.sh
+```
+
+
+
 ## Development
 
 This project can be used as is or as basis for other types of USB gadgets. It can also serve as a learning opportunity for:
@@ -149,6 +185,11 @@ It's been a fun journey of discovery, and I hope others find it useful or inspir
 
 Tested with DietPi 64bit as host and Windows 10 and MacOS USB clients to which the keyboard and mouse were connected. No issues with latency or input delay. My friend have been using this setup for a few days now and it works great.
 
+## Issues and Support
+
+Found a bug or have a suggestion? Please feel free to create an issue on GitHub! I'm actively maintaining this project and would be happy to look into any problems or improvements you identify. While this is a personal project, I'm committed to helping others get it working and making it better.
+
+Your feedback and contributions help make this project more reliable for everyone! 💜
 ## References
 
 - [Adafruit Guide: Turning your Raspberry Pi Zero into a USB Gadget](https://cdn-learn.adafruit.com/downloads/pdf/turning-your-raspberry-pi-zero-into-a-usb-gadget.pdf)

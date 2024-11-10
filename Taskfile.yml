@@ -11,11 +11,6 @@ tasks:
     cmds:
       - task: build
 
-  setup:
-    desc: Setup initial permissions and requirements
-    cmds:
-      - chmod +x scripts/*.sh
-
   build:
     desc: Build the application
     cmds:
@@ -88,7 +83,7 @@ tasks:
     cmds:
       - echo "Installing {{.BINARY_NAME}} service..."
       - cp bin/{{.BINARY_NAME}} {{.INSTALL_PATH}}/
-      - cp scripts/{{.SERVICE_NAME}} {{.SERVICE_PATH}}/
+      - cp {{.SERVICE_NAME}} {{.SERVICE_PATH}}/
       - systemctl daemon-reload
       - systemctl enable {{.BINARY_NAME}}.service
       - systemctl start {{.BINARY_NAME}}.service
