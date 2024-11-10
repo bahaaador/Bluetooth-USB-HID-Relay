@@ -1,5 +1,5 @@
-
 #!/bin/bash
+set -e
 
 # Check if running as root
 if [[ $EUID -ne 0 ]]; then
@@ -7,12 +7,74 @@ if [[ $EUID -ne 0 ]]; then
    exit 1
 fi
 
-set -e
+# check if modules are loaded
+MODULES_LOADED=0
+if lsmod | grep -E "g_ether|usb_f_rndis|usb_f_ecm|u_ether" > /dev/null; then
+    MODULES_LOADED=1
+fi
+
+# check if gadget exists
+GADGET_EXISTS=0
+if [ -d /sys/kernel/config/usb_gadget/hid_gadget ]; then
+    GADGET_EXISTS=1
+fi
+
+# if modules are loaded or gadget exists, ask for confirmation
+if [ $MODULES_LOADED -eq 1 ] || [ $GADGET_EXISTS -eq 1 ]; then
+    echo "WARNING: Found existing USB configuration:"
+    [ $MODULES_LOADED -eq 1 ] && echo "- USB modules are currently loaded"
+    [ $GADGET_EXISTS -eq 1 ] && echo "- HID gadget configuration exists"
+    echo "Proceeding will remove these configurations and may disrupt existing USB devices."
+    read -p "Do you want to proceed? (y/N) " -n 1 -r
+    echo    # Move to a new line
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        echo "Operation cancelled."
+        exit 0
+    fi
+fi
+
+cleanup_gadget() {
+    echo "Cleaning up existing USB configurations..."
+    
+    # Only unload modules if they exist
+    if [ $MODULES_LOADED -eq 1 ]; then
+        echo "Unloading existing USB modules..."
+        modprobe -r g_ether usb_f_rndis usb_f_ecm u_ether || true
+    fi
+    
+    # Clean up gadget directory if it exists
+    if [ $GADGET_EXISTS -eq 1 ]; then
+        echo "Removing existing HID gadget configuration..."
+        cd /sys/kernel/config/usb_gadget/hid_gadget
+        if [ -f UDC ]; then
+            echo "" > UDC
+        fi
+        
+        # Remove symbolic links
+        rm -f configs/c.1/hid.usb0
+        rm -f configs/c.1/hid.usb1
+        
+        # Remove directories
+        rm -rf functions/hid.usb0
+        rm -rf functions/hid.usb1
+        rm -rf configs/c.1/strings/0x409
+        rm -rf configs/c.1
+        rm -rf strings/0x409
+        
+        cd ..
+        rmdir hid_gadget 2>/dev/null || true
+    fi
+}
+
+# Only proceed with cleanup if user confirmed when needed
+if [ $MODULES_LOADED -eq 0 ] && [ $GADGET_EXISTS -eq 0 ] || [[ $REPLY =~ ^[Yy]$ ]]; then
+    cleanup_gadget
+else
+    echo "Operation cancelled."
+    exit 0
+fi
 
 echo "Setting up HID gadget..."
-
-# Unload existing modules
-modprobe -r g_ether usb_f_rndis usb_f_ecm u_ether || true
 
 # Create gadget
 mkdir -p /sys/kernel/config/usb_gadget/hid_gadget
