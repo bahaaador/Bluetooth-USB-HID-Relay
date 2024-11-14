@@ -146,7 +146,8 @@ func TestMain(t *testing.T) {
 	// Test with default arguments
 	os.Args = []string{"cmd"}
 
-	// Create a channel to capture potential panics
+	// Create channels for synchronization
+	ready := make(chan bool)
 	done := make(chan bool)
 
 	go func() {
@@ -160,9 +161,16 @@ func TestMain(t *testing.T) {
 			done <- true
 		}()
 
-		// Run main
-		go main()
-		time.Sleep(100 * time.Millisecond) // Let main initialize
+		// Run main in a goroutine with synchronization
+		go func() {
+			ready <- true
+			main()
+		}()
+
+		// Wait for main to start
+		<-ready
+		// Give main some time to initialize
+		time.Sleep(100 * time.Millisecond)
 		osExit(0)
 	}()
 

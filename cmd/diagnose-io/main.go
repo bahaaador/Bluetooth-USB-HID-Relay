@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/bahaaador/bluetooth-usb-peripheral-relay/internal/device"
 	"github.com/bahaaador/bluetooth-usb-peripheral-relay/internal/relay"
@@ -24,6 +26,10 @@ func main() {
 	fmt.Println("Bluetooth Device Verification Tool")
 	fmt.Println("=================================")
 
+	if err := verifyUSBHostSupport(); err != nil {
+		log.Fatal(err)
+	}
+
 	if err := verifyDevices(); err != nil {
 		log.Fatal(err)
 	}
@@ -31,6 +37,28 @@ func main() {
 	if err := echoDeviceInputs(); err != nil {
 		log.Fatal(err)
 	}
+}
+
+func verifyUSBHostSupport() error {
+	fmt.Println("\nChecking USB Host Support:")
+	hasHostCapability, isHostEnabled, err := device.CheckUSBHostSupport()
+	if err != nil {
+		return fmt.Errorf("failed to check USB host support: %v", err)
+	}
+
+	if !hasHostCapability {
+		return fmt.Errorf("USB Host mode is not supported")
+	} else {
+		fmt.Printf("%s USB Host mode: supported\n", checkMark)
+	}
+
+	if !isHostEnabled {
+		return fmt.Errorf("USB Host mode is not enabled")
+	} else {
+		fmt.Printf("%s USB Host mode: enabled\n", checkMark)
+	}
+
+	return nil
 }
 
 func verifyDevices() error {
@@ -94,7 +122,7 @@ func echoDeviceInputs() error {
 
 	// Only start readers for devices that were found
 	if mouseDevice != "" {
-		mouseFile, err := osOpenFile(mouseDevice, os.O_WRONLY, 0666)
+		mouseFile, err := osOpenFile(mouseDevice, os.O_RDONLY, 0666)
 		if err != nil {
 			return fmt.Errorf("failed to open mouse device: %v", err)
 		}
@@ -103,7 +131,7 @@ func echoDeviceInputs() error {
 	}
 
 	if keyboardDevice != "" {
-		keyboardFile, err := osOpenFile(keyboardDevice, os.O_WRONLY, 0666)
+		keyboardFile, err := osOpenFile(keyboardDevice, os.O_RDONLY, 0666)
 		if err != nil {
 			return fmt.Errorf("failed to open keyboard device: %v", err)
 		}
@@ -111,8 +139,13 @@ func echoDeviceInputs() error {
 		go readInput(keyboardFile, "Keyboard")
 	}
 
-	// Keep the program running
-	select {}
+	// Add a channel to handle program termination
+	done := make(chan os.Signal, 1)
+	signal.Notify(done, os.Interrupt, syscall.SIGTERM)
+	
+	// Wait for interrupt signal
+	<-done
+	return nil
 }
 
 func readInput(file *os.File, deviceName string) {

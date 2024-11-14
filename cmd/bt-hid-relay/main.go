@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 
+	"github.com/bahaaador/bluetooth-usb-peripheral-relay/internal/device"
 	"github.com/bahaaador/bluetooth-usb-peripheral-relay/internal/logger"
 	"github.com/bahaaador/bluetooth-usb-peripheral-relay/internal/relay"
 )
@@ -25,6 +26,19 @@ func parseFlags() relay.Config {
 
 func main() {
 	config := parseFlags()
+
+	hasHostCapability, isHostEnabled, err := device.CheckUSBHostSupport()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if !hasHostCapability {
+		log.Fatal("USB Host mode is not supported")
+	}
+
+	if !isHostEnabled {
+		log.Fatal("USB Host mode is not enabled")
+	}
 
 	relay := relay.NewRelay(config)
 	if err := relay.Start(); err != nil {
