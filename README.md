@@ -36,7 +36,14 @@ graph TD
 - Go program for handling Bluetooth input and USB HID output
 - Systemd service for automatic startup
 
-## Prerequisites
+## Requirements & Compatibility
+
+### Hardware
+- **Tested on:** Raspberry Pi Zero W 2
+- **Should work on:** Any Single Board Computer (SBC) with USB OTG or USB host capabilities
+- **Key requirement:** Device must be able to act as a USB gadget
+
+### Software Prerequisites
 
 Before building and running the project, ensure you have the following installed:
 
