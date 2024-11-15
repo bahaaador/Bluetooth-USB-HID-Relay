@@ -18,76 +18,91 @@ type EventConverter interface {
 }
 
 func streamDeviceEvents(ctx context.Context, inputPath, outputPath string, eventConverter EventConverter) error {
-	var inputFile *os.File
-	var outputFile *os.File
-	var err error
-
 	logger.DebugPrintf("InputEvent struct size: %d bytes", binary.Size(InputEvent{}))
+	deviceName := filepath.Base(inputPath)
 
 	for {
-		// Attempt to open input and output files
-		inputFile, err = os.Open(inputPath)
+		inputFile, outputFile, err := openDeviceFiles(inputPath, outputPath)
 		if err != nil {
-
-			return fmt.Errorf("failed to open input device %s: %v", inputPath, err)
+			return err
 		}
-
 		defer inputFile.Close()
-
-		logger.DebugPrintf("Opening output device %s", outputPath)
-		outputFile, err = os.OpenFile(outputPath, os.O_WRONLY, 0666)
-		if err != nil {
-			return fmt.Errorf("failed to open output device %s: %v", outputPath, err)
-		}
 		defer outputFile.Close()
 
-		event := InputEvent{}
-		deviceName := filepath.Base(inputPath)
+		if err := processEvents(ctx, inputFile, outputFile, eventConverter, deviceName); err != nil {
+			logger.Printf("Error processing events for %s: %v. Reconnecting...", deviceName, err)
+			continue
+		}
+		
+		return nil // Clean shutdown via context cancellation
+	}
+}
 
-		for {
-			select {
-			case <-ctx.Done():
-				logger.Printf("Relay shutdown for %s", inputPath)
-				// Send multiple release events during shutdown
-				for i := 0; i < 3; i++ {
-					releaseReport := []byte{0, 0, 0, 0, 0, 0, 0, 0}
-					outputFile.Write(releaseReport)
-					time.Sleep(10 * time.Millisecond)
-				}
-				return nil
-			default:
-				err := binary.Read(inputFile, binary.LittleEndian, &event)
-				if err != nil {
-					logger.Printf("Error reading from %s: %v. Reconnecting...", deviceName, err)
-					goto reconnect
-				}
+func openDeviceFiles(inputPath, outputPath string) (*os.File, *os.File, error) {
+	inputFile, err := os.Open(inputPath)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to open input device %s: %v", inputPath, err)
+	}
 
-				if !eventConverter.validateEvent(event) {
-					continue
-				}
+	logger.DebugPrintf("Opening output device %s", outputPath)
+	outputFile, err := os.OpenFile(outputPath, os.O_WRONLY, 0666)
+	if err != nil {
+		inputFile.Close()
+		return nil, nil, fmt.Errorf("failed to open output device %s: %v", outputPath, err)
+	}
 
-				logger.Printf("Read event from %s: Type=%d, Code=%d, Value=%d\n", deviceName, event.Type, event.Code, event.Value)
+	return inputFile, outputFile, nil
+}
 
-				report, err := eventConverter.convertEvent(event)
-				if err != nil {
-					logger.DebugPrintf("[DEBUG] Error converting event: %v", err)
-					continue
-				}
+func processEvents(ctx context.Context, inputFile, outputFile *os.File, eventConverter EventConverter, deviceName string) error {
+	event := InputEvent{}
 
-				if report != nil {
-					_, err = outputFile.Write(report)
-					if err != nil {
-						logger.Printf("Error writing to %s: %v. Reconnecting...", deviceName, err)
-						goto reconnect
-					}
+	for {
+		select {
+		case <-ctx.Done():
+			logger.Printf("Relay shutdown for %s", deviceName)
+			sendReleaseEvents(outputFile)
+			return nil
 
-					logger.DebugPrintf("[DEBUG] %s event relayed", deviceName)
-				}
+		default:
+			if err := binary.Read(inputFile, binary.LittleEndian, &event); err != nil {
+				return fmt.Errorf("read error: %v", err)
+			}
+
+			if !eventConverter.validateEvent(event) {
+				continue
+			}
+
+			logger.Printf("Read event from %s: Type=%d, Code=%d, Value=%d\n", 
+				deviceName, event.Type, event.Code, event.Value)
+
+			if err := handleEvent(outputFile, event, eventConverter, deviceName); err != nil {
+				return err
 			}
 		}
-	reconnect:
-		// Close files before attempting to reconnect
-		outputFile.Close()
-		inputFile.Close()
+	}
+}
+
+func handleEvent(outputFile *os.File, event InputEvent, eventConverter EventConverter, deviceName string) error {
+	report, err := eventConverter.convertEvent(event)
+	if err != nil {
+		logger.DebugPrintf("[DEBUG] Error converting event: %v", err)
+		return nil // Non-fatal error, continue processing
+	}
+
+	if report != nil {
+		if _, err := outputFile.Write(report); err != nil {
+			return fmt.Errorf("write error: %v", err)
+		}
+		logger.DebugPrintf("[DEBUG] %s event relayed", deviceName)
+	}
+	return nil
+}
+
+func sendReleaseEvents(outputFile *os.File) {
+	releaseReport := []byte{0, 0, 0, 0, 0, 0, 0, 0}
+	for i := 0; i < 3; i++ {
+		outputFile.Write(releaseReport)
+		time.Sleep(10 * time.Millisecond)
 	}
 }
