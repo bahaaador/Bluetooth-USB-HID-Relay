@@ -79,7 +79,7 @@ tasks:
       
   service:install:
     desc: Install the service
-    deps: [build-debug]
+    deps: [build-debug, service:stop]
     cmds:
       - echo "Installing {{.BINARY_NAME}} service..."
       - cp bin/{{.BINARY_NAME}} {{.INSTALL_PATH}}/
