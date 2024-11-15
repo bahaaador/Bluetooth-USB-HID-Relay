@@ -3,7 +3,6 @@ package relay
 import (
 	"context"
 	"fmt"
-	"math"
 	"os"
 	"os/signal"
 	"syscall"
@@ -11,6 +10,7 @@ import (
 
 	"github.com/bahaaador/bluetooth-usb-peripheral-relay/internal/device"
 	"github.com/bahaaador/bluetooth-usb-peripheral-relay/internal/logger"
+	"github.com/bahaaador/bluetooth-usb-peripheral-relay/internal/retry"
 )
 
 type Config struct {
@@ -75,48 +75,41 @@ func (r *Relay) wait() error {
 }
 
 func (r *Relay) handleMouseEvents() {
-	var retry int = 0
+	timer := retry.NewBackoffTimer()
+
 	for {
-		retry++
-
 		mouse, err := device.FindInputDevice("mouse")
+		delay := timer.NextDelay()
 		if err != nil {
-			logger.Printf("Mouse not found: %v, retrying in %d seconds...", err, retry)
-
-			time.Sleep(time.Duration(math.Min(float64(retry), 10)) * time.Second)
-
+			logger.Printf("Mouse not found: %v, waiting %v...", err, delay)
+			time.Sleep(delay)
 			continue
 		}
 
-		logger.DebugPrintf("Found mouse at: %s", mouse)
+		logger.Printf("Mouse connected: %s", mouse)
 
 		if err := streamDeviceEvents(r.ctx, mouse, r.config.MouseOutput, &MouseRelay{}); err != nil {
 			logger.Printf("Mouse relay error: %v, reconnecting...", err)
-			continue
 		}
-
-		retry = 0
 	}
 }
 
 func (r *Relay) handleKeyboardEvents() {
-	var retry int = 0
+	timer := retry.NewBackoffTimer()
+
 	for {
-		// Find keyboard keyboard
-		retry++
 		keyboard, err := device.FindInputDevice("keyboard")
 		if err != nil {
-			logger.Printf("Keyboard not found: %v, retrying in %d seconds...", err, retry)
-			// Retry every 100ms up to 10 seconds
-			time.Sleep(time.Duration(math.Min(float64(retry), 10)) * 100 * time.Millisecond)
+			delay := timer.NextDelay()
+			logger.Printf("Keyboard not found: %v, waiting %v...", err, delay)
+			time.Sleep(delay)
 			continue
 		}
 
+		timer.Reset()
 		logger.Printf("Found keyboard at: %s", keyboard)
 
-		// Start relaying until error occurs
-		err = streamDeviceEvents(r.ctx, keyboard, r.config.KeyboardOutput, &KeyboardRelay{})
-		if err != nil {
+		if err = streamDeviceEvents(r.ctx, keyboard, r.config.KeyboardOutput, &KeyboardRelay{}); err != nil {
 			logger.Printf("Keyboard relay error: %v, reconnecting...", err)
 		}
 	}

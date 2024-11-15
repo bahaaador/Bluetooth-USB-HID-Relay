@@ -21,7 +21,6 @@ func streamDeviceEvents(ctx context.Context, inputPath, outputPath string, event
 	var inputFile *os.File
 	var outputFile *os.File
 	var err error
-	var try int = 1
 
 	logger.DebugPrintf("InputEvent struct size: %d bytes", binary.Size(InputEvent{}))
 
@@ -29,14 +28,8 @@ func streamDeviceEvents(ctx context.Context, inputPath, outputPath string, event
 		// Attempt to open input and output files
 		inputFile, err = os.Open(inputPath)
 		if err != nil {
-			logger.Printf("Failed to open input device %s: %v. Retrying in %d seconds...", inputPath, err, try)
-			try++
-			time.Sleep(time.Duration(try) * time.Second)
 
-			if try > 5 {
-				return fmt.Errorf("failed to open input device %s: %v", inputPath, err)
-			}
-			continue
+			return fmt.Errorf("failed to open input device %s: %v", inputPath, err)
 		}
 
 		defer inputFile.Close()
@@ -44,16 +37,12 @@ func streamDeviceEvents(ctx context.Context, inputPath, outputPath string, event
 		logger.DebugPrintf("Opening output device %s", outputPath)
 		outputFile, err = os.OpenFile(outputPath, os.O_WRONLY, 0666)
 		if err != nil {
-			logger.Printf("Failed to open output device %s: %v. Retrying...", outputPath, err)
-			time.Sleep(1 * time.Second)
-			continue
+			return fmt.Errorf("failed to open output device %s: %v", outputPath, err)
 		}
 		defer outputFile.Close()
 
 		event := InputEvent{}
 		deviceName := filepath.Base(inputPath)
-
-		try = 1
 
 		for {
 			select {
