@@ -40,6 +40,7 @@ tasks:
 # verbose tests
   test:
     desc: Run tests
+    deps: [clean]
     cmds:
       - echo "Running tests..."
       - go test ./...
@@ -55,7 +56,6 @@ tasks:
   
   doctor:
     desc: Run the diagnose tool
-    deps: [build-debug]
     cmds:
       - echo "Running diagnose tool..."
       - go run ./cmd/diagnose-io/
@@ -119,6 +119,7 @@ tasks:
 
   service:start:
     desc: Start the service
+    deps: [build]
     cmds:
       - systemctl start {{.BINARY_NAME}}.service
     requires:
