@@ -37,12 +37,12 @@ tasks:
       - echo "Cleaning..."
       - rm -f bin/{{.BINARY_NAME}}
       - echo "Done"
-
+# verbose tests
   test:
     desc: Run tests
     cmds:
       - echo "Running tests..."
-      - go test ./...
+      - go test ./... -v
 
   run:
     desc: Run the application locally
