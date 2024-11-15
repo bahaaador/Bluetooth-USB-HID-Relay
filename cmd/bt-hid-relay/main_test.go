@@ -30,6 +30,11 @@ func init() {
 			return "", fmt.Errorf("device not found")
 		}
 	}
+
+	// Mock USB host support check
+	device.CheckUSBHostSupport = func() (bool, bool, error) {
+		return true, true, nil
+	}
 }
 
 func TestParseFlags(t *testing.T) {
@@ -110,11 +115,13 @@ func TestMain(t *testing.T) {
 	// Save original values
 	originalExit := osExit
 	originalFindInputDevice := device.FindInputDeviceFunc
+	originalCheckUSBHostSupport := device.CheckUSBHostSupport
 
 	// Restore after test
 	defer func() {
 		osExit = originalExit
 		device.FindInputDeviceFunc = originalFindInputDevice
+		device.CheckUSBHostSupport = originalCheckUSBHostSupport
 		log.SetOutput(os.Stderr)
 	}()
 
@@ -128,6 +135,11 @@ func TestMain(t *testing.T) {
 		default:
 			return "", fmt.Errorf("unknown device type")
 		}
+	}
+
+	// Mock USB host support check
+	device.CheckUSBHostSupport = func() (bool, bool, error) {
+		return true, true, nil
 	}
 
 	// Mock os.Exit

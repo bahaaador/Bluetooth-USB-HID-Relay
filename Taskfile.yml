@@ -42,7 +42,7 @@ tasks:
     desc: Run tests
     cmds:
       - echo "Running tests..."
-      - go test ./... -v
+      - go test ./...
 
   run:
     desc: Run the application locally

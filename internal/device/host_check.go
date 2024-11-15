@@ -5,8 +5,14 @@ import (
 	"strings"
 )
 
+// CheckUSBHostSupportFunc is a type for the host support check function
+type CheckUSBHostSupportFunc func() (bool, bool, error)
+
+// CheckUSBHostSupport is the function variable that can be replaced in tests
+var CheckUSBHostSupport CheckUSBHostSupportFunc = checkUSBHostSupport
+
 // CheckUSBHostSupport verifies both USB host hardware capability and if it's enabled
-func CheckUSBHostSupport() (hasCapability bool, isEnabled bool, err error) {
+func checkUSBHostSupport() (hasCapability bool, isEnabled bool, err error) {
 	// Check hardware capability first
 	hasCapability = false
 
