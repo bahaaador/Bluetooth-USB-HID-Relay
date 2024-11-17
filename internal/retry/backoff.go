@@ -1,30 +1,37 @@
 package retry
 
-import "time"
+import (
+	"math/rand"
+	"time"
+)
 
 type BackoffTimer struct {
 	attempts      int
 	resetInterval int
+	baseDelay     time.Duration
+	jitterFactor  float64
 }
 
-func NewBackoffTimer() *BackoffTimer {
+func NewBackoffTimer(resetInterval int, baseDelay time.Duration) *BackoffTimer {
 	return &BackoffTimer{
-		resetInterval: 5,
+		resetInterval: resetInterval,
+		baseDelay:     baseDelay,
+		jitterFactor:  0.01,
 	}
 }
 
 func (bt *BackoffTimer) NextDelay() time.Duration {
+	// Calculate attempt number (1-based)
+	currentAttempt := (bt.attempts % bt.resetInterval) + 1
+
+	// Calculate base delay
+	baseDelay := bt.baseDelay * time.Duration(currentAttempt)
+
+	// Apply jitter: randomly adjust the delay by ±jitterFactor
+	jitter := float64(baseDelay) * bt.jitterFactor * (2*rand.Float64() - 1)
+
+	// Increment attempts counter for next time
 	bt.attempts++
 
-	delay := time.Duration(bt.attempts) * time.Second
-
-	if bt.attempts >= bt.resetInterval {
-		bt.Reset()
-	}
-
-	return delay
-}
-
-func (bt *BackoffTimer) Reset() {
-	bt.attempts = 0
+	return baseDelay + time.Duration(jitter)
 }

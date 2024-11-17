@@ -75,13 +75,13 @@ func (r *Relay) wait() error {
 }
 
 func (r *Relay) handleMouseEvents() {
-	timer := retry.NewBackoffTimer()
+	timer := retry.NewBackoffTimer(5, time.Second)
 
 	for {
 		mouse, err := device.FindInputDevice("mouse")
 		delay := timer.NextDelay()
 		if err != nil {
-			logger.Printf("Mouse not found: %v, waiting %v...", err, delay)
+			logger.Printf("%v, retrying in %.0f second(s)...", err, delay.Seconds())
 			time.Sleep(delay)
 			continue
 		}
@@ -95,18 +95,17 @@ func (r *Relay) handleMouseEvents() {
 }
 
 func (r *Relay) handleKeyboardEvents() {
-	timer := retry.NewBackoffTimer()
+	timer := retry.NewBackoffTimer(5, time.Second)
 
 	for {
 		keyboard, err := device.FindInputDevice("keyboard")
+		delay := timer.NextDelay()
 		if err != nil {
-			delay := timer.NextDelay()
-			logger.Printf("Keyboard not found: %v, waiting %v...", err, delay)
+			logger.Printf("%v, retrying in %.0f second(s)...", err, delay.Seconds())
 			time.Sleep(delay)
 			continue
 		}
 
-		timer.Reset()
 		logger.Printf("Found keyboard at: %s", keyboard)
 
 		if err = streamDeviceEvents(r.ctx, keyboard, r.config.KeyboardOutput, &KeyboardRelay{}); err != nil {

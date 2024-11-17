@@ -6,7 +6,7 @@ var Debug bool
 
 func DebugPrintf(format string, v ...interface{}) {
 	if Debug {
-		log.Printf(format, v...)
+		log.Printf("[DEBUG] "+format, v...)
 	}
 }
 

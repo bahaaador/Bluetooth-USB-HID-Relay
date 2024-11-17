@@ -33,7 +33,7 @@ func streamDeviceEvents(ctx context.Context, inputPath, outputPath string, event
 			logger.Printf("Error processing events for %s: %v. Reconnecting...", deviceName, err)
 			continue
 		}
-		
+
 		return nil // Clean shutdown via context cancellation
 	}
 }
@@ -73,7 +73,7 @@ func processEvents(ctx context.Context, inputFile, outputFile *os.File, eventCon
 				continue
 			}
 
-			logger.Printf("Read event from %s: Type=%d, Code=%d, Value=%d\n", 
+			logger.DebugPrintf("Read event from %s: Type=%d, Code=%d, Value=%d\n",
 				deviceName, event.Type, event.Code, event.Value)
 
 			if err := handleEvent(outputFile, event, eventConverter, deviceName); err != nil {
@@ -86,7 +86,7 @@ func processEvents(ctx context.Context, inputFile, outputFile *os.File, eventCon
 func handleEvent(outputFile *os.File, event InputEvent, eventConverter EventConverter, deviceName string) error {
 	report, err := eventConverter.convertEvent(event)
 	if err != nil {
-		logger.DebugPrintf("[DEBUG] Error converting event: %v", err)
+		logger.DebugPrintf("Error converting event: %v", err)
 		return nil // Non-fatal error, continue processing
 	}
 
@@ -94,7 +94,7 @@ func handleEvent(outputFile *os.File, event InputEvent, eventConverter EventConv
 		if _, err := outputFile.Write(report); err != nil {
 			return fmt.Errorf("write error: %v", err)
 		}
-		logger.DebugPrintf("[DEBUG] %s event relayed", deviceName)
+		logger.DebugPrintf("%s event relayed", deviceName)
 	}
 	return nil
 }

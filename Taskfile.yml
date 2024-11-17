@@ -15,11 +15,13 @@ tasks:
     desc: Build the application
     cmds:
       - echo "Building {{.BINARY_NAME}}..."
-      - go build -o bin/{{.BINARY_NAME}} ./cmd/bt-hid-relay/
+      - go build -ldflags="-s -w" -o bin/{{.BINARY_NAME}} ./cmd/bt-hid-relay/
     sources:
       - ./**/*.go
     generates:
-      - bin/{{.BINARY_NAME}}
+      - bin/{{.BINARY_NAME}}.release
+    vars:
+      BINARY_NAME: "{{.BINARY_NAME}}.release"
 
   build-debug:
     desc: Build with debug flags
@@ -29,13 +31,15 @@ tasks:
     sources:
       - ./**/*.go
     generates:
-      - bin/{{.BINARY_NAME}}
+      - bin/{{.BINARY_NAME}}.debug
+    vars:
+      BINARY_NAME: "{{.BINARY_NAME}}.debug"
 
   clean:
     desc: Clean build artifacts
     cmds:
       - echo "Cleaning..."
-      - rm -f bin/{{.BINARY_NAME}}
+      - rm -f bin/{{.BINARY_NAME}}.*
       - echo "Done"
 # verbose tests
   test:
@@ -47,10 +51,10 @@ tasks:
 
   run:
     desc: Run the application locally
-    deps: [build]
+    deps: [build-debug]
     cmds:
       - echo "Running {{.BINARY_NAME}}..."
-      - sudo ./bin/{{.BINARY_NAME}} -debug
+      - sudo ./bin/{{.BINARY_NAME}}.debug -debug
     requires:
       root: true
   
@@ -79,10 +83,11 @@ tasks:
       
   service:install:
     desc: Install the service
-    deps: [build-debug, service:stop]
+    deps: [build]
     cmds:
       - echo "Installing {{.BINARY_NAME}} service..."
-      - cp bin/{{.BINARY_NAME}} {{.INSTALL_PATH}}/
+      - systemctl stop {{.BINARY_NAME}}.service || true
+      - cp bin/{{.BINARY_NAME}}.release {{.INSTALL_PATH}}/{{.BINARY_NAME}}
       - cp {{.SERVICE_NAME}} {{.SERVICE_PATH}}/
       - systemctl daemon-reload
       - systemctl enable {{.BINARY_NAME}}.service

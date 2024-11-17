@@ -75,7 +75,7 @@ B: EV=120013`
 			deviceType:  "nonexistent",
 			want:        "",
 			wantErr:     true,
-			errContains: "device not found",
+			errContains: "not found",
 		},
 	}
 

@@ -32,7 +32,6 @@ type DeviceConfig struct {
 var FindInputDeviceFunc = FindInputDevice
 var readFile = os.ReadFile
 
-
 func FindInputDevice(deviceType string) (string, error) {
 	data, err := readFile("/proc/bus/input/devices")
 	if err != nil {
@@ -61,5 +60,5 @@ func FindInputDevice(deviceType string) (string, error) {
 		}
 	}
 
-	return "", fmt.Errorf("%s device not found", deviceType)
+	return "", fmt.Errorf("%s not found", deviceType)
 }
